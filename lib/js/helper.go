@@ -5,35 +5,35 @@ package js
 // Element ...
 var Element = &Function{
 	Name:         "element",
-	Definition:   `function(e){return functions.selectable(this).querySelector(e)}`,
+	Definition:   `function(e){return ns.selectable(this).querySelector(e)}`,
 	Dependencies: []*Function{Selectable},
 }
 
 // Elements ...
 var Elements = &Function{
 	Name:         "elements",
-	Definition:   `function(e){return functions.selectable(this).querySelectorAll(e)}`,
+	Definition:   `function(e){return ns.selectable(this).querySelectorAll(e)}`,
 	Dependencies: []*Function{Selectable},
 }
 
 // ElementX ...
 var ElementX = &Function{
 	Name:         "elementX",
-	Definition:   `function(e){const t=functions.selectable(this);return document.evaluate(e,t,null,XPathResult.FIRST_ORDERED_NODE_TYPE).singleNodeValue}`,
+	Definition:   `function(e){const t=ns.selectable(this);return document.evaluate(e,t,null,XPathResult.FIRST_ORDERED_NODE_TYPE).singleNodeValue}`,
 	Dependencies: []*Function{Selectable},
 }
 
 // ElementsX ...
 var ElementsX = &Function{
 	Name:         "elementsX",
-	Definition:   `function(e){const t=functions.selectable(this),n=document.evaluate(e,t,null,XPathResult.ORDERED_NODE_ITERATOR_TYPE),i=[];let s;for(;s=n.iterateNext();)i.push(s);return i}`,
+	Definition:   `function(e){const t=ns.selectable(this),n=document.evaluate(e,t,null,XPathResult.ORDERED_NODE_ITERATOR_TYPE),i=[];let s;for(;s=n.iterateNext();)i.push(s);return i}`,
 	Dependencies: []*Function{Selectable},
 }
 
 // ElementR ...
 var ElementR = &Function{
 	Name:         "elementR",
-	Definition:   `function(e,t){var n,i=t.match(/(\/?)(.+)\1([a-z]*)/i);n=i[3]&&!/^(?!.*?(.).*?\1)[gmixXsuUAJ]+$/.test(i[3])?new RegExp(t):new RegExp(i[2],i[3]);const s=functions.selectable(this),o=Array.from(s.querySelectorAll(e)).find(e=>n.test(functions.text.call(e)));return o||null}`,
+	Definition:   `function(e,t){var n,i=t.match(/(\/?)(.+)\1([a-z]*)/i);n=i[3]&&!/^(?!.*?(.).*?\1)[gmixXsuUAJ]+$/.test(i[3])?new RegExp(t):new RegExp(i[2],i[3]);const s=ns.selectable(this),r=Array.from(s.querySelectorAll(e)).find(e=>n.test(ns.text.call(e)));return r||null}`,
 	Dependencies: []*Function{Selectable, Text},
 }
 
@@ -54,7 +54,7 @@ var ContainsElement = &Function{
 // InitMouseTracer ...
 var InitMouseTracer = &Function{
 	Name:         "initMouseTracer",
-	Definition:   `async function(e,t){if(await functions.waitLoad(),document.getElementById(e))return;const n=document.createElement("div");n.innerHTML=t;const i=n.lastChild;i.id=e,i.style="position: absolute; z-index: 2147483647; width: 17px; pointer-events: none;",i.removeAttribute("width"),i.removeAttribute("height"),document.body.appendChild(i)}`,
+	Definition:   `async function(e,t){if(await ns.waitLoad(),document.getElementById(e))return;const n=document.createElement("div");n.innerHTML=t;const i=n.lastChild;i.id=e,i.style="position: absolute; z-index: 2147483647; width: 17px; pointer-events: none;",i.removeAttribute("width"),i.removeAttribute("height"),document.body.appendChild(i)}`,
 	Dependencies: []*Function{WaitLoad},
 }
 
@@ -68,21 +68,21 @@ var UpdateMouseTracer = &Function{
 // Rect ...
 var Rect = &Function{
 	Name:         "rect",
-	Definition:   `function(){const e=functions.tag(this).getBoundingClientRect();return{x:e.x,y:e.y,width:e.width,height:e.height}}`,
+	Definition:   `function(){const e=ns.tag(this).getBoundingClientRect();return{x:e.x,y:e.y,width:e.width,height:e.height}}`,
 	Dependencies: []*Function{Tag},
 }
 
 // Overlay ...
 var Overlay = &Function{
 	Name:         "overlay",
-	Definition:   `async function(e,t,n,i,s,o){await functions.waitLoad();const r=document.createElement("div");if(r.id=e,r.style=` + "`" + `position: fixed; z-index:2147483647; border: 2px dashed red;\n        border-radius: 3px; box-shadow: #5f3232 0 0 3px; pointer-events: none;\n        box-sizing: border-box;\n        left: ${t}px;\n        top: ${n}px;\n        height: ${s}px;\n        width: ${i}px;` + "`" + `,i*s==0&&(r.style.border="none"),!o)return void document.body.appendChild(r);const l=document.createElement("div");l.style=` + "`" + `position: absolute; color: #cc26d6; font-size: 12px; background: #ffffffeb;\n        box-shadow: #333 0 0 3px; padding: 2px 5px; border-radius: 3px; white-space: nowrap;\n        top: ${s}px;` + "`" + `,l.innerHTML=o,r.appendChild(l),document.body.appendChild(r),window.innerHeight<l.offsetHeight+n+s&&(l.style.top=-l.offsetHeight-2+"px"),window.innerWidth<l.offsetWidth+t&&(l.style.left=window.innerWidth-l.offsetWidth-t+"px")}`,
+	Definition:   `async function(e,t,n,i,s,r){await ns.waitLoad();const o=document.createElement("div");if(o.id=e,o.style=` + "`" + `position: fixed; z-index:2147483647; border: 2px dashed red;\n        border-radius: 3px; box-shadow: #5f3232 0 0 3px; pointer-events: none;\n        box-sizing: border-box;\n        left: ${t}px;\n        top: ${n}px;\n        height: ${s}px;\n        width: ${i}px;` + "`" + `,i*s==0&&(o.style.border="none"),!r)return void document.body.appendChild(o);const l=document.createElement("div");l.style=` + "`" + `position: absolute; color: #cc26d6; font-size: 12px; background: #ffffffeb;\n        box-shadow: #333 0 0 3px; padding: 2px 5px; border-radius: 3px; white-space: nowrap;\n        top: ${s}px;` + "`" + `,l.innerHTML=r,o.appendChild(l),document.body.appendChild(o),window.innerHeight<l.offsetHeight+n+s&&(l.style.top=-l.offsetHeight-2+"px"),window.innerWidth<l.offsetWidth+t&&(l.style.left=window.innerWidth-l.offsetWidth-t+"px")}`,
 	Dependencies: []*Function{WaitLoad},
 }
 
 // ElementOverlay ...
 var ElementOverlay = &Function{
 	Name:         "elementOverlay",
-	Definition:   `async function(e,t){const n=functions.tag(this);let i=n.getBoundingClientRect();await functions.overlay(e,i.left,i.top,i.width,i.height,t);const s=()=>{const t=document.getElementById(e);if(null===t)return;const o=n.getBoundingClientRect();i.left!==o.left||i.top!==o.top||i.width!==o.width||i.height!==o.height?(t.style.left=o.left+"px",t.style.top=o.top+"px",t.style.width=o.width+"px",t.style.height=o.height+"px",i=o,setTimeout(s,100)):setTimeout(s,100)};setTimeout(s,100)}`,
+	Definition:   `async function(e,t){const n=ns.tag(this);let i=n.getBoundingClientRect();await ns.overlay(e,i.left,i.top,i.width,i.height,t);const s=()=>{const t=document.getElementById(e);if(null===t)return;const r=n.getBoundingClientRect();i.left!==r.left||i.top!==r.top||i.width!==r.width||i.height!==r.height?(t.style.left=r.left+"px",t.style.top=r.top+"px",t.style.width=r.width+"px",t.style.height=r.height+"px",i=r,setTimeout(s,100)):setTimeout(s,100)};setTimeout(s,100)}`,
 	Dependencies: []*Function{Tag, Overlay},
 }
 
@@ -117,7 +117,7 @@ var InputEvent = &Function{
 // InputTime ...
 var InputTime = &Function{
 	Name:         "inputTime",
-	Definition:   `function(e){const t=new Date(e),n=e=>e.toString().padStart(2,"0"),i=t.getFullYear(),s=n(t.getMonth()+1),o=n(t.getDate()),r=n(t.getHours()),l=n(t.getMinutes());switch(this.type){case"date":this.value=` + "`" + `${i}-${s}-${o}` + "`" + `;break;case"datetime-local":this.value=` + "`" + `${i}-${s}-${o}T${r}:${l}` + "`" + `;break;case"month":this.value=s;break;case"time":this.value=` + "`" + `${r}:${l}` + "`" + `}functions.inputEvent.call(this)}`,
+	Definition:   `function(e){const t=new Date(e),n=e=>e.toString().padStart(2,"0"),i=t.getFullYear(),s=n(t.getMonth()+1),r=n(t.getDate()),o=n(t.getHours()),l=n(t.getMinutes());switch(this.type){case"date":this.value=` + "`" + `${i}-${s}-${r}` + "`" + `;break;case"datetime-local":this.value=` + "`" + `${i}-${s}-${r}T${o}:${l}` + "`" + `;break;case"month":this.value=s;break;case"time":this.value=` + "`" + `${o}:${l}` + "`" + `}ns.inputEvent.call(this)}`,
 	Dependencies: []*Function{InputEvent},
 }
 
@@ -145,14 +145,14 @@ var Select = &Function{
 // Visible ...
 var Visible = &Function{
 	Name:         "visible",
-	Definition:   `function(){const e=functions.tag(this),t=e.getBoundingClientRect(),n=window.getComputedStyle(e);return"none"!==n.display&&"hidden"!==n.visibility&&!!(t.top||t.bottom||t.width||t.height)}`,
+	Definition:   `function(){const e=ns.tag(this),t=e.getBoundingClientRect(),n=window.getComputedStyle(e);return"none"!==n.display&&"hidden"!==n.visibility&&!!(t.top||t.bottom||t.width||t.height)}`,
 	Dependencies: []*Function{Tag},
 }
 
 // Invisible ...
 var Invisible = &Function{
 	Name:         "invisible",
-	Definition:   `function(){return!functions.visible.apply(this)}`,
+	Definition:   `function(){return!ns.visible.apply(this)}`,
 	Dependencies: []*Function{Visible},
 }
 
@@ -173,14 +173,14 @@ var Resource = &Function{
 // AddScriptTag ...
 var AddScriptTag = &Function{
 	Name:         "addScriptTag",
-	Definition:   `function(e,t,n){if(!document.getElementById(e))return new Promise((i,s)=>{var o=document.createElement("script");t?(o.src=t,o.onload=i):(o.type="text/javascript",o.text=n,i()),o.id=e,o.onerror=s,document.head.appendChild(o)})}`,
+	Definition:   `function(e,t,n){if(!document.getElementById(e))return new Promise((i,s)=>{var r=document.createElement("script");t?(r.src=t,r.onload=i):(r.type="text/javascript",r.text=n,i()),r.id=e,r.onerror=s,document.head.appendChild(r)})}`,
 	Dependencies: []*Function{},
 }
 
 // AddStyleTag ...
 var AddStyleTag = &Function{
 	Name:         "addStyleTag",
-	Definition:   `function(e,t,n){if(!document.getElementById(e))return new Promise((i,s)=>{var o;t?((o=document.createElement("link")).rel="stylesheet",o.href=t):((o=document.createElement("style")).type="text/css",o.appendChild(document.createTextNode(n)),i()),o.id=e,o.onload=i,o.onerror=s,document.head.appendChild(o)})}`,
+	Definition:   `function(e,t,n){if(!document.getElementById(e))return new Promise((i,s)=>{var r;t?((r=document.createElement("link")).rel="stylesheet",r.href=t):((r=document.createElement("style")).type="text/css",r.appendChild(document.createTextNode(n)),i()),r.id=e,r.onload=i,r.onerror=s,document.head.appendChild(r)})}`,
 	Dependencies: []*Function{},
 }
 
@@ -201,6 +201,13 @@ var Tag = &Function{
 // ExposeFunc ...
 var ExposeFunc = &Function{
 	Name:         "exposeFunc",
-	Definition:   `function(e,t){let n=0;window[e]=(e=>new Promise((i,s)=>{const o=t+"_cb"+n++;window[o]=((e,t)=>{delete window[o],t?s(t):i(e)}),window[t](JSON.stringify({req:e,cb:o}))}))}`,
+	Definition:   `function(e,t){let n=0;window[e]=(e=>new Promise((i,s)=>{const r=t+"_cb"+n++;window[r]=((e,t)=>{delete window[r],t?s(t):i(e)}),window[t](JSON.stringify({req:e,cb:r}))}))}`,
+	Dependencies: []*Function{},
+}
+
+// Retry ...
+var Retry = &Function{
+	Name:         "retry",
+	Definition:   `function(e,t=requestAnimationFrame){const n=new AbortController;return{wait:new Promise((i,s)=>{const r=async()=>{try{const o=await e(n.signal);n.signal.aborted||null!==o?i(o):t(r)}catch(e){s(e)}};r()}),abort:()=>n.abort()}}`,
 	Dependencies: []*Function{},
 }

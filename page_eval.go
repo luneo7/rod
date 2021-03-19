@@ -49,7 +49,7 @@ type EvalOptions struct {
 // Eval creates a EvalOptions with ByValue set to true.
 //
 // When an arg in the args is a *js.Function, the arg will be cached on the page's js context.
-// When the arg.Name exists in the page's cache, it reuse the cache without sending the definition to the browser again.
+// When the arg.Name exists in the page's cache, it will use the cache without sending the definition to the browser again.
 // Useful when you need to eval a huge js expression many times.
 func Eval(js string, args ...interface{}) *EvalOptions {
 	return &EvalOptions{
@@ -302,7 +302,7 @@ func (p *Page) ensureJSHelper(fn *js.Function) (proto.RuntimeRemoteObjectID, err
 			FunctionDeclaration: fmt.Sprintf(
 				// we only need the object id, but the cdp will return the whole function string.
 				// So we override the toString to reduce the overhead.
-				"functions => { const f = functions.%s = %s; f.toString = () => 'fn'; return f }",
+				"ns => { const f = ns.%s = %s; f.toString = () => 'fn'; return f }",
 				fn.Name, fn.Definition,
 			),
 		}.Call(p)

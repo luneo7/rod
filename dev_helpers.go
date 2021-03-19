@@ -105,7 +105,7 @@ func (b *Browser) trySlowmotion() {
 func (p *Page) ExposeHelpers(list ...*js.Function) {
 	p.MustEvaluate(evalHelper(&js.Function{
 		Name:         "_" + utils.RandString(8), // use a random name so it won't hit the cache
-		Definition:   "() => { window.rod = functions }",
+		Definition:   "() => { window.rod = ns }",
 		Dependencies: list,
 	}))
 }

@@ -38,7 +38,7 @@ func main() {
 	utils.Exec("gofmt", "-s", "-w", "lib/js/helper.go")
 }
 
-var regDeps = regexp.MustCompile(`\Wfunctions.(\w+)`)
+var regDeps = regexp.MustCompile(`\Wns.(\w+)`)
 
 func getDeps(fn string) string {
 	ms := regDeps.FindAllStringSubmatch(fn, -1)
@@ -67,9 +67,9 @@ func getList() gson.JSON {
 
 		const list = []
 
-		for (const name in functions) {
+		for (const name in ns) {
 			const reg = new RegExp('^(async )?' + name)
-			const definition = functions[name].toString().replace(reg, '$1function')
+			const definition = ns[name].toString().replace(reg, '$1function')
 			list.push({name, definition})
 		}
 

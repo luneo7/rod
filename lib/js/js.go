@@ -9,7 +9,7 @@ type Function struct {
 	// the js code is compressed by uglify-js.
 	Definition string
 
-	// Dependencies will be preloaded and assigned to the global js object "functions"
+	// Dependencies will be preloaded and assigned to the global js object "ns"
 	Dependencies []*Function
 }
 
