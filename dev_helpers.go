@@ -110,7 +110,8 @@ func (p *Page) ExposeHelpers(list ...*js.Function) {
 	}))
 }
 
-// Overlay a rectangle on the main frame with specified message
+// Overlay a rectangle on the main frame with specified message.
+// The msg will be rendered as html.
 func (p *Page) Overlay(left, top, width, height float64, msg string) (remove func()) {
 	id := utils.RandString(8)
 
@@ -194,7 +195,7 @@ func (p *Page) tryTraceReq(includes, excludes []string) func(map[proto.NetworkRe
 	return update
 }
 
-// Overlay msg on the element
+// Overlay msg on the element. The msg will be rendered as html.
 func (el *Element) Overlay(msg string) (removeOverlay func()) {
 	id := utils.RandString(8)
 

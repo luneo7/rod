@@ -201,6 +201,12 @@ func (l *Launcher) Headless(enable bool) *Launcher {
 	return l.Delete("headless")
 }
 
+// App specifies that the associated url should be launched in "application" mode.
+// In this mode the browser will hide navigation bar and tab bar.
+func (l *Launcher) AppMode(url string) *Launcher {
+	return l.Headless(false).Set("app", url)
+}
+
 // NoSandbox switch. Whether to run browser in no-sandbox mode.
 // Linux users may face "running as root without --no-sandbox is not supported" in some Linux/Chrome combinations. This function helps switch mode easily.
 // Be aware disabling sandbox is not trivial. Use at your own risk.

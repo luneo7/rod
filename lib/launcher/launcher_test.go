@@ -129,6 +129,7 @@ func (t T) LaunchUserMode() {
 	url := l.Context(t.Context()).Delete("test").Bin("").
 		Logger(ioutil.Discard).
 		Leakless(false).Leakless(true).
+		AppMode("http://test.com").Delete("app").
 		Headless(false).Headless(true).RemoteDebuggingPort(port).
 		NoSandbox(true).NoSandbox(false).
 		Devtools(true).Devtools(false).
