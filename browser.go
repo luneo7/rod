@@ -451,8 +451,16 @@ func (b *Browser) IgnoreCertErrors(enable bool) error {
 }
 
 // GetCookies from the browser
-func (b *Browser) GetCookies() ([]*proto.NetworkCookie, error) {
-	res, err := proto.StorageGetCookies{BrowserContextID: b.BrowserContextID}.Call(b)
+func (b *Browser) GetCookies(urls []string) ([]*proto.NetworkCookie, error) {
+	if len(urls) == 0 {
+		res, err := proto.StorageGetCookies{BrowserContextID: b.BrowserContextID}.Call(b)
+		if err != nil {
+			return nil, err
+		}
+		return res.Cookies, nil
+	}
+
+	res, err := proto.NetworkGetCookies{Urls: urls}.Call(b)
 	if err != nil {
 		return nil, err
 	}

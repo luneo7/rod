@@ -76,8 +76,8 @@ func (b *Browser) MustIgnoreCertErrors(enable bool) *Browser {
 }
 
 // MustGetCookies is similar Browser.GetCookies
-func (b *Browser) MustGetCookies() []*proto.NetworkCookie {
-	nc, err := b.GetCookies()
+func (b *Browser) MustGetCookies(urls ...string) []*proto.NetworkCookie {
+	nc, err := b.GetCookies(urls)
 	utils.E(err)
 	return nc
 }

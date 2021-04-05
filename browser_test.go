@@ -285,7 +285,13 @@ func (t T) BrowserCookies() {
 	})
 
 	cookies := b.MustGetCookies()
+	t.Len(cookies, 1)
+	t.Eq(cookies[0].Name, "a")
+	t.Eq(cookies[0].Value, "val")
 
+	b.EnableDomain("", proto.NetworkEnable{})
+
+	cookies = b.MustGetCookies("test.com")
 	t.Len(cookies, 1)
 	t.Eq(cookies[0].Name, "a")
 	t.Eq(cookies[0].Value, "val")
@@ -297,7 +303,10 @@ func (t T) BrowserCookies() {
 	}
 
 	t.mc.stubErr(1, proto.StorageGetCookies{})
-	t.Err(b.GetCookies())
+	t.Err(b.GetCookies(nil))
+
+	t.mc.stubErr(1, proto.StorageGetCookies{})
+	t.Err(b.GetCookies([]string{"test.com"}))
 }
 
 func (t T) WaitDownload() {
