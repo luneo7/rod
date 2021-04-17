@@ -569,7 +569,7 @@ func (p *Page) EvalOnNewDocument(js string) (remove func() error, err error) {
 	return
 }
 
-// Wait until the js returns true
+// Wait and rerun the js until the js returns true.
 func (p *Page) Wait(this *proto.RuntimeRemoteObject, js string, params []interface{}) error {
 	return utils.Retry(p.ctx, p.sleeper(), func() (bool, error) {
 		opts := Eval(js, params...).ByPromise().This(this)
