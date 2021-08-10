@@ -29,21 +29,14 @@ func (t T) PageEvalOnNewDocument() {
 func (t T) PageEval() {
 	page := t.page.MustNavigate(t.blank())
 
-	t.Eq(3, page.MustEval(`
-		(a, b) => a + b
-	`, 1, 2).Int())
-	t.Eq(10, page.MustEval(`
-		10
+	t.Eq(3, page.MustEval(`(a, b) => a + b`, 1, 2).Int())
+	t.Eq(10, page.MustEval(`10`).Int())
+	t.Eq(10, page.MustEval(`1
+		2
 	`).Int())
-	t.Eq(1, page.MustEval(`a => 1`).Int())
-	t.Eq(1, page.MustEval(`function() { return 1 }`).Int())
-	t.Eq(1, page.MustEval(`((1))`).Int())
-	t.Neq(1, page.MustEval(`a = () => 1`).Int())
-	t.Neq(1, page.MustEval(`a = function() { return 1 }`))
-	t.Neq(1, page.MustEval(`/* ) */`))
 
 	// reuse obj
-	obj := page.MustEvaluate(rod.Eval(`() => () => 'ok'`).ByObject())
+	obj := page.MustEvaluate(rod.Eval(`() => 'ok'`).ByObject())
 	t.Eq("ok", page.MustEval(`f => f()`, obj).Str())
 }
 

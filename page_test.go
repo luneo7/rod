@@ -322,11 +322,10 @@ func (t T) PageWaitRequestIdle() {
 
 	page := t.newPage(s.URL()).MustWaitLoad()
 
-	code := ` () => {
-		fetch('/r2').then(r => r.text())
+	code := `fetch('/r2').then(r => r.text())
 		fetch('/r1')
 		fetch('/r3')
-	}`
+	`
 
 	waitReq := ""
 	t.browser.Logger(utils.Log(func(msg ...interface{}) {

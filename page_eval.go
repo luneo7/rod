@@ -26,18 +26,11 @@ type EvalOptions struct {
 	// ThisObj represents the "this" object in the JS
 	ThisObj *proto.RuntimeRemoteObject
 
-	// JS code to eval. It can be an expression or function definition. If it's a function definition
-	// the function will be executed with the JSArgs. Such as
-	//     1 + 2
-	// is the same as
-	//     () => 1 + 2
-	// or
-	//     function() {
-	//         return 1 + 2
-	//     }
+	// JS code to eval. If JSArgs is not empty, the JS code must be a function definition and the
+	// function will be executed.
 	JS string
 
-	// JSArgs represents the arguments in the JS if the JS is a function definition.
+	// JSArgs represents the arguments in the JS function definition.
 	// If an argument is *proto.RuntimeRemoteObject type, the corresponding remote object will be used.
 	// Or it will be passed as a plain JSON value.
 	JSArgs []interface{}
@@ -118,11 +111,10 @@ func (e *EvalOptions) ByPromise() *EvalOptions {
 }
 
 func (e *EvalOptions) formatToJSFunc() string {
-	js := strings.TrimSpace(e.JS)
-	if detectJSFunction(js) {
-		return fmt.Sprintf(`function() { return (%s).apply(this, arguments) }`, js)
+	if len(e.JSArgs) > 0 {
+		return fmt.Sprintf(`function() { return (%s).apply(this, arguments) }`, e.JS)
 	}
-	return fmt.Sprintf(`function() { return %s }`, js)
+	return fmt.Sprintf(`function() { return %s }`, e.JS)
 }
 
 // Eval is just a shortcut for Page.Evaluate with AwaitPromise set true.
