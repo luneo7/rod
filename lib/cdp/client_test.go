@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -129,11 +130,15 @@ func (t T) Basic() {
 	t.E(err)
 
 	t.Eq("<h4>it works</h4>", gson.New(res).Get("outerHTML").String())
+
+	_, err = client.Call(ctx, sessionID, "DOM.getOuterHTML", func() {})
+	t.Err(err)
 }
 
 func (t T) TestError() {
 	cdpErr := cdp.Error{10, "err", "data"}
 	t.Eq(cdpErr.Error(), "{10 err data}")
+	t.True(cdpErr.Is(&cdpErr))
 
 	t.Panic(func() {
 		cdp.New("").MustConnect(t.Context())
@@ -141,7 +146,6 @@ func (t T) TestError() {
 }
 
 func (t T) NewWithLogger() {
-
 	t.Panic(func() {
 		cdp.New("").MustConnect(t.Context())
 	})
@@ -189,5 +193,11 @@ func (t T) Crash() {
 		"awaitPromise": true,
 	})
 	t.Is(err, cdp.ErrConnClosed)
+	t.Is(err, io.EOF)
 	t.Eq(err.Error(), "cdp connection closed: EOF")
+
+	_, err = client.Call(ctx, sessionID, "Runtime.evaluate", map[string]interface{}{
+		"expression": `10`,
+	})
+	t.Has(err.Error(), "cdp connection closed")
 }

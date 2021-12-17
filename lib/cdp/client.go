@@ -4,7 +4,6 @@ package cdp
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"sync"
 	"sync/atomic"
@@ -12,28 +11,6 @@ import (
 	"github.com/go-rod/rod/lib/defaults"
 	"github.com/go-rod/rod/lib/utils"
 )
-
-// Client is a devtools protocol connection instance.
-type Client struct {
-	ctx   context.Context
-	close func()
-
-	wsURL  string
-	header http.Header
-	ws     WebSocketable
-
-	muSend sync.Mutex
-
-	pending *pendingRequests // buffer for response from browser
-
-	chReq   chan []byte    // request from user
-	chRes   chan *Response // response from browser
-	chEvent chan *Event    // events from browser
-
-	count uint64
-
-	logger utils.Logger
-}
 
 // Request to send to browser
 type Request struct {
@@ -66,17 +43,30 @@ type WebSocketable interface {
 	Send([]byte) error
 	// Read returns text message only
 	Read() ([]byte, error)
+	// Close the connection
+	Close() error
+}
+
+// Client is a devtools protocol connection instance.
+type Client struct {
+	wsURL  string
+	header http.Header
+	ws     WebSocketable
+
+	pending sync.Map    // pending requests
+	event   chan *Event // events from browser
+
+	count uint64
+
+	logger utils.Logger
 }
 
 // New creates a cdp connection, all messages from Client.Event must be received or they will block the client.
 func New(websocketURL string) *Client {
 	return &Client{
-		pending: newPendingRequests(),
-		chReq:   make(chan []byte),
-		chRes:   make(chan *Response),
-		chEvent: make(chan *Event),
-		wsURL:   websocketURL,
-		logger:  defaults.CDP,
+		event:  make(chan *Event),
+		wsURL:  websocketURL,
+		logger: defaults.CDP,
 	}
 }
 
@@ -110,14 +100,19 @@ func (cdp *Client) Connect(ctx context.Context) error {
 		return err
 	}
 
-	ctx, cancel := context.WithCancel(ctx)
-
-	cdp.ctx = ctx
-	cdp.close = cancel
-
-	go cdp.readMsgFromBrowser()
+	go cdp.consumeMessages()
 
 	return nil
+}
+
+// Close the underlying websocket connection and make all the pending Client.Call return the reason immediately.
+func (cdp *Client) Close(reason error) error {
+	cdp.pending.Range(func(_, val interface{}) bool {
+		val.(*utils.Promise).Done(nil, &errConnClosed{details: reason})
+		return true
+	})
+
+	return cdp.ws.Close()
 }
 
 // MustConnect is similar to Connect
@@ -126,12 +121,8 @@ func (cdp *Client) MustConnect(ctx context.Context) *Client {
 	return cdp
 }
 
-// Call a method and get its response, if ctx is nil context.Background() will be used
+// Call a method and wait for its response
 func (cdp *Client) Call(ctx context.Context, sessionID, method string, params interface{}) ([]byte, error) {
-	if ctx.Err() != nil {
-		return nil, ctx.Err()
-	}
-
 	req := &Request{
 		ID:        int(atomic.AddUint64(&cdp.count, 1)),
 		SessionID: sessionID,
@@ -142,61 +133,45 @@ func (cdp *Client) Call(ctx context.Context, sessionID, method string, params in
 	cdp.logger.Println(req)
 
 	data, err := json.Marshal(req)
-	utils.E(err)
-
-	pending := newPendingRequest()
-	if err := cdp.pending.add(req.ID, pending); err != nil {
+	if err != nil {
 		return nil, err
 	}
-	defer cdp.pending.delete(req.ID)
 
-	if err := cdp.sendMsg(data); err != nil {
-		return nil, err
+	err = cdp.ws.Send(data)
+	if err != nil {
+		_ = cdp.Close(err)
+		return nil, &errConnClosed{details: err}
 	}
+
+	p := utils.NewPromise()
+	cdp.pending.Store(req.ID, p)
+	defer cdp.pending.Delete(req.ID)
 
 	select {
 	case <-ctx.Done():
 		return nil, ctx.Err()
-
-	case r := <-pending.result:
-		if r.err != nil {
-			return nil, r.err
+	case <-p.Wait():
+		val, err := p.Result()
+		if err != nil {
+			return nil, err
 		}
-		res := r.response
-		if res.Error != nil {
-			return nil, res.Error
-		}
-		return res.Result, nil
+		return val.(json.RawMessage), nil
 	}
-
 }
 
 // Event returns a channel that will emit browser devtools protocol events. Must be consumed or will block producer.
 func (cdp *Client) Event() <-chan *Event {
-	return cdp.chEvent
+	return cdp.event
 }
 
-func (cdp *Client) sendMsg(data []byte) error {
-	cdp.muSend.Lock()
-	defer cdp.muSend.Unlock()
-
-	err := cdp.ws.Send(data)
-	if err != nil {
-		cdp.wsClose(err)
-		return err
-	}
-
-	return nil
-}
-
-func (cdp *Client) readMsgFromBrowser() {
-	defer close(cdp.chEvent)
-	defer cdp.wsClose(nil)
+// Consume messages coming from the browser via the websocket.
+func (cdp *Client) consumeMessages() {
+	defer close(cdp.event)
 
 	for {
 		data, err := cdp.ws.Read()
 		if err != nil {
-			cdp.wsClose(err)
+			_ = cdp.Close(err)
 			return
 		}
 
@@ -210,120 +185,22 @@ func (cdp *Client) readMsgFromBrowser() {
 			var res Response
 			err := json.Unmarshal(data, &res)
 			utils.E(err)
+
 			cdp.logger.Println(&res)
-			cdp.pending.fulfill(id.ID, &res)
+
+			if val, ok := cdp.pending.Load(id.ID); ok {
+				if res.Error != nil {
+					val.(*utils.Promise).Done(nil, res.Error)
+				} else {
+					val.(*utils.Promise).Done(res.Result, nil)
+				}
+			}
 		} else {
 			var evt Event
 			err := json.Unmarshal(data, &evt)
 			utils.E(err)
 			cdp.logger.Println(&evt)
-			select {
-			case <-cdp.ctx.Done():
-				return
-			case cdp.chEvent <- &evt:
-			}
+			cdp.event <- &evt
 		}
 	}
-}
-
-func (cdp *Client) wsClose(err error) {
-	cdp.logger.Println(err)
-	cdp.pending.close(&errConnClosed{err})
-	cdp.close()
-}
-
-// pendingRequests tracks requests that have been sent to the satellite.
-type pendingRequests struct {
-	mu      sync.Mutex
-	err     error
-	pending map[int]*pendingRequest
-}
-
-func newPendingRequests() *pendingRequests {
-	return &pendingRequests{
-		pending: make(map[int]*pendingRequest),
-	}
-}
-
-// close marks the requests as not being able to make new requests.
-// It will also close any pending requests.
-func (reqs *pendingRequests) close(err error) {
-	reqs.mu.Lock()
-	defer reqs.mu.Unlock()
-
-	if reqs.err != nil {
-		return
-	}
-
-	if err == nil {
-		err = errors.New("browser has shut down")
-	}
-	reqs.err = err
-
-	for _, pending := range reqs.pending {
-		pending.close(err)
-	}
-	reqs.pending = map[int]*pendingRequest{}
-}
-
-// add adds a new pending request. When the browser has disconnected
-// then it will return an error.
-func (reqs *pendingRequests) add(id int, resp *pendingRequest) error {
-	reqs.mu.Lock()
-	defer reqs.mu.Unlock()
-	if reqs.err != nil {
-		return reqs.err
-	}
-	reqs.pending[id] = resp
-	return nil
-}
-
-// fulfill fills in a pending request and removes from the map.
-func (reqs *pendingRequests) fulfill(id int, r *Response) {
-	reqs.mu.Lock()
-	defer reqs.mu.Unlock()
-
-	pending, ok := reqs.pending[id]
-	if !ok {
-		return
-	}
-	pending.respond(r)
-	delete(reqs.pending, id)
-}
-
-// delete delets a pending request.
-func (reqs *pendingRequests) delete(id int) {
-	reqs.mu.Lock()
-	defer reqs.mu.Unlock()
-	delete(reqs.pending, id)
-}
-
-type pendingRequest struct {
-	done   sync.Once
-	result chan pendingResponse
-}
-
-type pendingResponse struct {
-	response *Response
-	err      error
-}
-
-func newPendingRequest() *pendingRequest {
-	return &pendingRequest{result: make(chan pendingResponse, 1)}
-}
-
-func (pending *pendingRequest) respond(r *Response) {
-	select {
-	case pending.result <- pendingResponse{response: r}:
-	default:
-	}
-	pending.done.Do(func() { close(pending.result) })
-}
-
-func (pending *pendingRequest) close(err error) {
-	select {
-	case pending.result <- pendingResponse{err: err}:
-	default:
-	}
-	pending.done.Do(func() { close(pending.result) })
 }
