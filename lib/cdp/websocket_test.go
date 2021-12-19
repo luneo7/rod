@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/go-rod/rod/lib/cdp"
 	"github.com/go-rod/rod/lib/launcher"
@@ -22,6 +23,25 @@ func (t T) WebSocketLargePayload() {
 	})
 	t.E(err)
 	t.Gt(res, 2*1024*1024) // 2MB
+}
+
+func (t T) ConcurrentCall() {
+	ctx := t.Context()
+	client, id := t.newPage(ctx)
+
+	wg := sync.WaitGroup{}
+	for i := 0; i < 30; i++ {
+		wg.Add(1)
+		go func() {
+			res, err := client.Call(ctx, id, "Runtime.evaluate", map[string]interface{}{
+				"expression": `10`,
+			})
+			t.Nil(err)
+			t.Eq(string(res), "{\"result\":{\"type\":\"number\",\"value\":10,\"description\":\"10\"}}")
+			wg.Done()
+		}()
+	}
+	wg.Wait()
 }
 
 func (t T) WebSocketHeader() {
