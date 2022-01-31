@@ -32,6 +32,38 @@ var hostConf = map[string]struct {
 	"windows": {"chrome-win.zip", "Win"},
 }[runtime.GOOS]
 
+type defaultHosts struct {
+	items []Host
+}
+
+var (
+	dHosts *defaultHosts
+	mu     = &sync.Mutex{}
+)
+
+func GetDefaultHosts() []Host {
+	if dHosts == nil {
+		mu.Lock()
+		defer mu.Unlock()
+		if dHosts == nil {
+			dHosts = &defaultHosts{items: []Host{HostGoogle, HostTaobao}}
+		}
+	}
+
+	return dHosts.items
+}
+
+func SetDefaultHosts(hosts []Host) {
+	mu.Lock()
+	defer mu.Unlock()
+
+	if dHosts == nil {
+		dHosts = &defaultHosts{items: hosts}
+	} else {
+		dHosts.items = hosts
+	}
+}
+
 // HostGoogle to download browser
 func HostGoogle(revision int) string {
 	return fmt.Sprintf(
@@ -85,7 +117,7 @@ func NewBrowser() *Browser {
 	return &Browser{
 		Context:  context.Background(),
 		Revision: DefaultRevision,
-		Hosts:    []Host{HostGoogle, HostTaobao},
+		Hosts:    GetDefaultHosts(),
 		Dir:      DefaultBrowserDir,
 		Logger:   os.Stdout,
 		LockPort: defaults.LockPort,
